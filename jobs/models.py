@@ -149,6 +149,14 @@ class Job(models.Model):
     def __str__(self):
         return self.title + ' - ' + str(self.id)
 
+    @property
+    def truncated_description(self):
+        max_length = 254
+        if len(self.description) > max_length:
+            return self.description[:max_length] + '...'
+        else:
+            return self.description
+
     def update_last_viewed(self):
         self.last_viewed_at = timezone.now()
         self.save()

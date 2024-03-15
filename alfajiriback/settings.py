@@ -8,8 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
-allowed_hosts = config('ALLOWED_HOSTS')
-ALLOWED_HOSTS = allowed_hosts.split(',')
+ALLOWED_HOSTS = ['127.0.0.1',  'willieilus.pythonanywhere.com']
 
 # Application definition
 
@@ -52,12 +51,14 @@ REST_FRAMEWORK = {
     ),
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://alfajirijobs.com",
-    "https://alfajirijob.netlify.app",
-    "https://alfajirijobs.netlify.app",
-]
+CORS_ALLOW_ALL_ORIGINS = True
+
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",
+#     "http://alfajirijobs.com",
+#     "https://alfajirijob.netlify.app",
+#     "https://alfajirijobs.netlify.app",
+# ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

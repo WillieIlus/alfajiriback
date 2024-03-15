@@ -49,6 +49,7 @@ class JobSerializer(serializers.ModelSerializer):
     plan_title = serializers.ReadOnlyField(source='plan.title')
     views_count = serializers.IntegerField(read_only=True)
     click_count = serializers.IntegerField(read_only=True)
+    truncated_description = serializers.CharField(read_only=True)
 
     def get_timesince(self, obj):
         return obj.timesince()
@@ -58,7 +59,10 @@ class JobSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Job
-        fields = 'title', 'slug', 'view_count', 'click_count', 'get_user', 'get_company', 'get_location', 'user', 'get_category', 'company', 'location', 'category', 'job_type', 'work_experience', 'description',  'education_level', 'min_salary', 'max_salary', 'currency', 'salary_type', 'created_at', 'updated_at', 'is_active',  'applicants', 'timesince', 'get_job_type', 'get_created_at', 'days_left', 'plan_title', 'views_count', 'click_count'
+        fields = ('title', 'slug', 'truncated_description', 'description', 'view_count', 'click_count', 'get_user', 'get_company', 'get_location', 'user',
+                  'get_category', 'company', 'location', 'category', 'job_type', 'work_experience', 'education_level', 'min_salary', 'max_salary', 'currency', 'salary_type',
+                  'created_at', 'updated_at', 'is_active', 'applicants', 'timesince', 'get_job_type',
+                  'get_created_at', 'days_left', 'plan_title', 'views_count', 'click_count')
         read_only_fields = ('created_at', 'updated_at', 'is_active', 'slug')
 
 
