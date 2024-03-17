@@ -103,7 +103,7 @@ class JobDetailsViewSet(RetrieveUpdateDestroyAPIView):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
     lookup_field = 'slug'
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    # permission_classes = [IsAuthenticatedOrReadOnly]
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
