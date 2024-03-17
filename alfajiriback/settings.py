@@ -35,7 +35,7 @@ INSTALLED_APPS = [
     'companies',
     'locations',
     'payments',
-    'plans',   
+    'plans',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
@@ -51,14 +51,15 @@ REST_FRAMEWORK = {
     ),
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = True
 
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",
-#     "http://alfajirijobs.com",
-#     "https://alfajirijob.netlify.app",
-#     "https://alfajirijobs.netlify.app",
-# ]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://alfajirijobs.com",
+    "https://alfajirijobs.com",
+    "https://alfajirijob.netlify.app",
+    "https://alfajirijobs.netlify.app",
+]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
