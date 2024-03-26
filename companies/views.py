@@ -5,6 +5,7 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
+from rest_framework import status
 
 from .models import Company
 from .serializers import CompanySerializer
@@ -13,11 +14,12 @@ from accounts.models import User
 from categories.models import Category
 from locations.models import Location
 
+
 class CompanyListCreateAPIView(ListCreateAPIView):
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
-    # parser_classes = (MultiPartParser, FormParser)
     lookup_field = 'slug'
+    parser_classes = (MultiPartParser, FormParser,)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -26,6 +28,15 @@ class CompanyListCreateAPIView(ListCreateAPIView):
         if self.request.method == 'POST':
             return [IsAuthenticated()]
         return []
+
+    #
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CompanyRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):

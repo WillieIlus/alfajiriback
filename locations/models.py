@@ -10,7 +10,6 @@ class LocationManager(models.Manager):
 
 
 # Create your Country and Location models here.
-
 class Country(models.Model):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True, blank=True, null=True)

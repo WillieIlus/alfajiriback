@@ -30,6 +30,13 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = 'name', 'slug'
+        
+        
+class BookmarkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Bookmark
+        fields = ('id', 'job', 'user', 'created_at')
+        read_only_fields = ('created_at',)
 
 
 class JobSerializer(serializers.ModelSerializer):
@@ -37,6 +44,7 @@ class JobSerializer(serializers.ModelSerializer):
     company = CompanySerializer(required=False)
     location = LocationSerializer(required=False)
     category = CategorySerializer(required=False)
+    bookmark = BookmarkSerializer(required=False)
     get_user = serializers.CharField(source='user', required=False)
     get_company = serializers.CharField(source='company', required=False)
     get_location = serializers.CharField(source='location', required=False)
@@ -62,15 +70,11 @@ class JobSerializer(serializers.ModelSerializer):
         fields = ('title', 'slug', 'truncated_description', 'description', 'view_count', 'click_count', 'get_user', 'get_company', 'get_location', 'user',
                   'get_category', 'company', 'location', 'category', 'job_type', 'work_experience', 'education_level', 'min_salary', 'max_salary', 'currency', 'salary_type',
                   'created_at', 'updated_at', 'is_active', 'applicants', 'timesince', 'get_job_type',
-                  'get_created_at', 'days_left', 'plan_title', 'views_count', 'click_count')
+                  'get_created_at', 'days_left', 'plan_title', 'views_count', 'click_count', 'bookmarks', 'bookmark')
         read_only_fields = ('created_at', 'updated_at', 'is_active', 'slug')
 
 
-class BookmarkSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Bookmark
-        fields = ('id', 'job', 'user', 'created_at')
-        read_only_fields = ('created_at',)
+
 
 
 class JobApplicationSerializer(serializers.ModelSerializer):
