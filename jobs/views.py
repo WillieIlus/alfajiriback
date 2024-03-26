@@ -57,13 +57,14 @@ class JobViewSet(ListCreateAPIView):
                 job.view_count += 1
                 job.save(update_fields=['view_count'])
             else:
+                #don't increment view count
                 job.view_count += 0
+                # job.view_count += 0
                 job.save(update_fields=['view_count'])
         job.update_last_viewed()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-    
-    
+        
 
     # def list(self, request, *args, **kwargs):
     #     queryset = self.filter_queryset(self.get_queryset())
@@ -144,9 +145,9 @@ class JobDetailsViewSet(RetrieveUpdateDestroyAPIView):
     
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        time_since_last_clicked = timezone.now() - timedelta(minutes=1)
+        time_since_last_clicked = timezone.now() - timedelta(minutes=75)
         if time_since_last_clicked:
-            if instance.last_clicked_at < time_since_last_clicked:
+            if instance.last_clicked_at > time_since_last_clicked:
                 instance.click_count += 0
                 instance.view_count += 0
                 instance.save(update_fields=['click_count'])
