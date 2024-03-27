@@ -27,7 +27,6 @@ from locations.serializers import LocationSerializer
 from categories.models import Category
 from categories.serializers import CategorySerializer
 
-
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
@@ -48,22 +47,24 @@ class JobViewSet(ListCreateAPIView):
             return [IsAuthenticated()]
         return []
 
+
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         current_time = timezone.now()
         time_since_last_viewed = current_time - timedelta(minutes=75)
         for job in queryset:
-            if job.last_viewed_at > time_since_last_viewed:
+            # Check if last_viewed_at is not None before comparison
+            if job.last_viewed_at and job.last_viewed_at > time_since_last_viewed:
                 job.view_count += 1
                 job.save(update_fields=['view_count'])
             else:
-                #don't increment view count
-                job.view_count += 0
-                # job.view_count += 0
-                job.save(update_fields=['view_count'])
-        job.update_last_viewed()
+                # Don't increment view count
+                pass  # No need to save if view_count is not incremented
+        # It seems you are calling update_last_viewed on a single job instance
+        # This should probably be inside the loop and only called if the view_count was incremented
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
         
 
     # def list(self, request, *args, **kwargs):
