@@ -36,5 +36,5 @@ class CompanySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Company
-        fields =  'name', 'slug', 'logo', 'website', 'description', 'job_count', 'get_user', 'user', 'get_location', 'location', 'get_category', 'category', 'created_at', 'updated_at'
+        fields =  'id', 'name', 'slug', 'logo', 'website', 'description', 'job_count', 'get_user', 'user', 'get_location', 'location', 'get_category', 'category', 'created_at', 'updated_at'
         read_only_fields = ('slug', 'created_at', 'updated_at')
