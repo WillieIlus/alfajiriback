@@ -14,6 +14,15 @@ from accounts.models import User
 from categories.models import Category
 from locations.models import Location
 
+class CategoryCompanyViewSet(ListAPIView):
+    serializer_class = CompanySerializer
+    lookup_field = 'slug'
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        category = Category.objects.get(slug=self.kwargs['slug'])
+        return Company.objects.filter(category=category)
+
 
 class CompanyListCreateAPIView(ListCreateAPIView):
     queryset = Company.objects.all()
@@ -29,7 +38,6 @@ class CompanyListCreateAPIView(ListCreateAPIView):
             return [IsAuthenticated()]
         return []
 
-    #
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -58,7 +66,7 @@ class CompanyRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
         return Response(status=204)
     
     def put(self, request, *args, **kwargs):
-        company = Company.objects.get(slug=self.kwargs['slug'])
+        company = Company.objects.get(slug=self.kwargs['slug'], user=request.user)
         serializer = CompanySerializer(company, data=request.data)
         if serializer.is_valid():
             serializer.save()

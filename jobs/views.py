@@ -18,6 +18,10 @@ from .serializers import JobSerializer, JobApplicationSerializer, ImpressionSeri
     BookmarkSerializer
 from .filters import JobFilter
 
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
+
 from accounts.models import User
 from accounts.serializers import UserSerializer
 from companies.models import Company
@@ -27,9 +31,6 @@ from locations.serializers import LocationSerializer
 from categories.models import Category
 from categories.serializers import CategorySerializer
 
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework import status
 
 class JobViewSet(ListCreateAPIView):
     queryset = Job.objects.all()
@@ -47,40 +48,19 @@ class JobViewSet(ListCreateAPIView):
             return [IsAuthenticated()]
         return []
 
-
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         current_time = timezone.now()
         time_since_last_viewed = current_time - timedelta(minutes=75)
         for job in queryset:
-            # Check if last_viewed_at is not None before comparison
             if job.last_viewed_at and job.last_viewed_at > time_since_last_viewed:
                 job.view_count += 1
                 job.save(update_fields=['view_count'])
             else:
-                # Don't increment view count
-                pass  # No need to save if view_count is not incremented
-        # It seems you are calling update_last_viewed on a single job instance
-        # This should probably be inside the loop and only called if the view_count was incremented
+                pass
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-        
-
-    # def list(self, request, *args, **kwargs):
-    #     queryset = self.filter_queryset(self.get_queryset())
-    #     current_time = timezone.now()
-    #     time_since_last_viewed = current_time - timedelta(minutes=75)
-    #     for job in queryset:
-    #         if job.last_viewed_at < time_since_last_viewed:
-    #             job.view_count += 0
-    #             job.save(update_fields=['view_count'])
-    #     job.view_count += 1
-    #     job.save(update_fields=['view_count'])
-    #     job.update_last_viewed()
-    #     serializer = self.get_serializer(queryset, many=True)
-    #     return Response(serializer.data)
-    
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -143,37 +123,26 @@ class JobDetailsViewSet(RetrieveUpdateDestroyAPIView):
     serializer_class = JobSerializer
     lookup_field = 'slug'
     # permission_classes = [IsAuthenticatedOrReadOnly]
-    
+
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         time_since_last_clicked = timezone.now() - timedelta(minutes=75)
-        if time_since_last_clicked:
-            if instance.last_clicked_at > time_since_last_clicked:
-                instance.click_count += 0
-                instance.view_count += 0
-                instance.save(update_fields=['click_count'])
-                instance.save(update_fields=['view_count'])
-        instance.view_count += 1
-        instance.click_count += 1
-        instance.save(update_fields=['view_count'])
-        instance.save(update_fields=['click_count'])
-        instance.update_last_viewed()
-        instance.update_last_clicked()
+
+        # Check if last_clicked_at is not None and greater than time_since_last_clicked
+        if instance.last_clicked_at and instance.last_clicked_at > time_since_last_clicked:
+            instance.click_count += 1
+            instance.view_count += 1
+            instance.save(update_fields=['click_count', 'view_count'])
+            instance.update_last_viewed()
+            instance.update_last_clicked()
+
+        # Always increment view_count by 1
+        else:
+            instance.view_count += 1
+            instance.save(update_fields=['view_count'])
+
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
-    
-        
-
-    # def retrieve(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     instance.view_count += 1
-    #     instance.click_count += 1
-    #     instance.save(update_fields=['view_count'])
-    #     instance.save(update_fields=['click_count'])
-    #     instance.update_last_viewed()
-    #     instance.update_last_clicked()
-    #     serializer = self.get_serializer(instance)
-    #     return Response(serializer.data)
 
 
 class JobApplicationViewSet(ListCreateAPIView):

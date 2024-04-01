@@ -151,7 +151,7 @@ class Job(models.Model):
 
     @property
     def truncated_description(self):
-        max_length = 254
+        max_length = 170
         if len(self.description) > max_length:
             return self.description[:max_length] + '...'
         else:
@@ -202,13 +202,13 @@ class Job(models.Model):
             return max(days_left, 0)
         return None
 
-
     def save(self, *args, **kwargs):
         if not self.slug:
             title_str = str(self.title)
-            company_str = str(self.company)  
-            self.slug = slugify(title_str + ' ' + company_str)
-        super().save(*args, **kwargs)
+            company_id = str(self.company.id)
+            self.slug = slugify(title_str + ' ' + company_id)
+        super(Job, self).save(*args, **kwargs)
+
 
 
 class Bookmark(models.Model):

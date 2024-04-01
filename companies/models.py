@@ -55,6 +55,14 @@ class Company(models.Model):
     def get_absolute_url(self):
         return reverse('companies:detail', kwargs={'slug': self.slug})
 
+    @property
+    def truncated_description(self):
+        max_length = 170
+        if len(self.description) > max_length:
+            return self.description[:max_length] + '...'
+        else:
+            return self.description
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)

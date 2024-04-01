@@ -17,7 +17,7 @@ class UserSerializer(serializers.ModelSerializer):
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
-        fields = 'name', 'logo', 'website', 'description'
+        fields = 'name', 'slug', 'logo', 'website', 'description'
 
 
 class LocationSerializer(serializers.ModelSerializer):
@@ -72,9 +72,6 @@ class JobSerializer(serializers.ModelSerializer):
                   'created_at', 'updated_at', 'is_active', 'applicants', 'timesince', 'get_job_type',
                   'get_created_at', 'days_left', 'plan_title', 'views_count', 'click_count', 'bookmarks', 'bookmark')
         read_only_fields = ('created_at', 'updated_at', 'is_active', 'slug')
-
-
-
 
 
 class JobApplicationSerializer(serializers.ModelSerializer):
