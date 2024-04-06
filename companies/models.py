@@ -19,7 +19,7 @@ class CompanyManager(models.Manager):
 class Company(models.Model):
     name = models.CharField(max_length=255, verbose_name=_('Name'))
     slug = models.SlugField(max_length=255, unique=True, verbose_name=_('Slug'))
-    description = models.TextField(verbose_name=_('Description'), blank=True, null=True)
+    description = models.TextField(max_length=6000, verbose_name=_('Description'), blank=True, null=True)
     logo = models.ImageField(upload_to='companies/logos/', blank=True, null=True)
     cover = models.ImageField(upload_to='companies/', verbose_name=_('Cover'), blank=True, null=True)
     website = models.URLField(verbose_name=_('Website'), blank=True, null=True)

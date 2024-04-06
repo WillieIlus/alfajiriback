@@ -104,7 +104,7 @@ class Job(models.Model):
     phone = models.CharField(max_length=200, blank=True, null=True)
     image = models.ImageField(upload_to='jobs/images/', blank=True, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=True, null=True)
-    description = models.TextField(max_length=2000, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
 
     duration_days = models.PositiveIntegerField(default=30, validators=[MinValueValidator(1), MaxValueValidator(365)],
                                                 blank=True, null=True)
