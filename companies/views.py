@@ -102,13 +102,13 @@ class CompanyCategoryViewSet(ListAPIView):
         return Company.objects.filter(category=category)
     
     
-class CompanyUserViewSet(ListAPIView):
+class MyCompanyViewSet(ListAPIView):
     serializer_class = CompanySerializer
     lookup_field = 'slug'
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    # permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
-        user = User.objects.get(user=self.kwargs['user'])
+        user =self.request.user
         return Company.objects.filter(user=user)
 
         
