@@ -94,9 +94,9 @@ class Job(models.Model):
     title = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True, verbose_name=_('Slug'), blank=True, null=True)
     address = models.CharField(max_length=255, verbose_name=_('Specific location'), blank=True, null=True)
-    location = models.ForeignKey(Location, default=1, blank=True, null=True, on_delete=models.CASCADE)
-    category = models.ForeignKey(Category, default=1, blank=True, null=True, on_delete=models.CASCADE)
-    company = models.ForeignKey(Company, default=1, blank=True, null=True, on_delete=models.CASCADE)
+    location = models.ForeignKey(Location, blank=True, null=True, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category,  blank=True, null=True, on_delete=models.CASCADE)
+    company = models.ForeignKey(Company,  blank=True, null=True, on_delete=models.CASCADE)
     plan = models.ForeignKey(Plan, on_delete=models.CASCADE, blank=True, null=True)
 
     email = models.EmailField(max_length=200, blank=True, null=True)
