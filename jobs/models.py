@@ -206,7 +206,7 @@ class Job(models.Model):
         if not self.slug:
             title_str = str(self.title)
             job_id = str(self.id)  # Changed from company.id to self.id
-            self.slug = slugify(title_str + ' ' + job_id)
+            self.slug = slugify(title_str )#+ ' ' + job_id)
         super(Job, self).save(*args, **kwargs)
 
 

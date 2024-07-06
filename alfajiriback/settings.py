@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = ['127.0.0.1',  'willieilus.pythonanywhere.com']
+ALLOWED_HOSTS = ['127.0.0.1',  'willieilus.pythonanywhere.com', 'localhost']
 
 # Application definition
 
@@ -101,23 +101,23 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'alfajiriback.wsgi.application'
 
+# DATABASES = {
+    # 'default': {
+        # 'ENGINE': 'django.db.backends.mysql',
+        # 'NAME': config('DB_NAME'),
+        # 'USER': config('DB_USER'),
+        # 'PASSWORD': config('DB_PASSWORD'),
+        # 'HOST': config('DB_HOST'),  # Or an IP Address that your DB is hosted on
+        # 'PORT': config('DB_PORT', default='3306', cast=str),  # Default MySQL port
+    # }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),  # Or an IP Address that your DB is hosted on
-        'PORT': config('DB_PORT', default='3306', cast=str),  # Default MySQL port
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
 
 # DATABASES = {
 #   'DEFAULT': {

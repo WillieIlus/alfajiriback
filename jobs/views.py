@@ -8,19 +8,14 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny, IsAuthenticatedOrReadOnly
-
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import JsonResponse, Http404
+from rest_framework.views import APIView
 
 from .models import Job, JobApplication, Impression, Click, Bookmark
-from .serializers import JobSerializer, JobApplicationSerializer, ImpressionSerializer, ClickSerializer, \
-    BookmarkSerializer
+from .serializers import JobSerializer, JobApplicationSerializer, ImpressionSerializer, ClickSerializer, BookmarkSerializer
 from .filters import JobFilter
-
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework import status
 
 from accounts.models import User
 from accounts.serializers import UserSerializer
@@ -30,7 +25,6 @@ from locations.models import Location
 from locations.serializers import LocationSerializer
 from categories.models import Category
 from categories.serializers import CategorySerializer
-
 
 class JobViewSet(ListCreateAPIView):
     queryset = Job.objects.all()
@@ -60,14 +54,6 @@ class JobViewSet(ListCreateAPIView):
                 pass
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CompanyJobViewSet(ListAPIView):
