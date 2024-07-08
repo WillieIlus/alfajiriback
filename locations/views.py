@@ -31,6 +31,7 @@ class LocationList(ListCreateAPIView):
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
     lookup_field = 'slug'
+    parser_classes = (MultiPartParser, FormParser,)
 
 class LocationDetail(RetrieveUpdateDestroyAPIView):
     queryset = Location.objects.all()

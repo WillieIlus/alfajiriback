@@ -13,7 +13,7 @@ class CountrySerializer(serializers.ModelSerializer):
 class LocationSerializer(serializers.ModelSerializer):
     job_count = serializers.SerializerMethodField()
     jobs = JobSerializer(many=True, read_only=True)
-    country = CountrySerializer()
+    # country = CountrySerializer()
 
     def get_job_count(self, location):
         return Job.objects.filter(location=location).count()

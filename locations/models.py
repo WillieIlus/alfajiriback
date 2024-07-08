@@ -61,9 +61,9 @@ class Location(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
         super(Location, self).save(*args, **kwargs)  # save the instance first
-        if self.pk:
-            self.job_count = self.job_set.count()
-            super(Location, self).save(*args, update_fields=['job_count'], **kwargs)  # update the job_count field
+        # if self.pk:
+        #     self.job_count = self.job_set.count()
+        #     super(Location, self).save(*args, update_fields=['job_count'], **kwargs)  # update the job_count field
 
 
 
