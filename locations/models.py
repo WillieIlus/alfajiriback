@@ -43,7 +43,7 @@ class Location(models.Model):
     objects = LocationManager()
     class Meta:
         verbose_name_plural = "Locations"
-        ordering = ('-job_count', '-created_at', '-name')
+        ordering = ( 'created_at', '-job_count', '-name')
 
     def __str__(self):
         return self.name

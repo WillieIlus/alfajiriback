@@ -43,7 +43,7 @@ class Company(models.Model):
     class Meta:
         verbose_name = _('Company')
         verbose_name_plural = _('Companies')
-        ordering = ('-job_count', '-created_at', '-updated_at', 'name')
+        ordering = ('created_at', '-job_count', '-updated_at', 'name')
 
     # def __str__(self):
     #     return self.name
