@@ -12,6 +12,8 @@ from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import JsonResponse, Http404
 from rest_framework.views import APIView
+from rest_framework.decorators import action
+from django.db.models import Q
 
 from .models import Job, JobApplication, Impression, Click, Bookmark
 from .serializers import JobSerializer, JobApplicationSerializer, ImpressionSerializer, ClickSerializer, BookmarkSerializer
@@ -25,6 +27,7 @@ from locations.models import Location
 from locations.serializers import LocationSerializer
 from categories.models import Category
 from categories.serializers import CategorySerializer
+
 
 class JobViewSet(ListCreateAPIView):
     queryset = Job.objects.all()
@@ -59,7 +62,7 @@ class JobViewSet(ListCreateAPIView):
 class CompanyJobViewSet(ListAPIView):
     serializer_class = JobSerializer
     lookup_field = 'slug'
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    # permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = JobFilter
 
@@ -109,9 +112,11 @@ class JobDetailsViewSet(RetrieveUpdateDestroyAPIView):
     serializer_class = JobSerializer
     lookup_field = 'slug'
     # permission_classes = [IsAuthenticatedOrReadOnly]
-
+    
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
         time_since_last_clicked = timezone.now() - timedelta(minutes=75)
 
         # Check if last_clicked_at is not None and greater than time_since_last_clicked
@@ -129,6 +134,15 @@ class JobDetailsViewSet(RetrieveUpdateDestroyAPIView):
 
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+        # Add related jobs to the response
+        related_jobs = Job.objects.filter(
+            Q(category=instance.category) | Q(company=instance.company)
+        ).exclude(id=instance.id)[:3]
+        related_serializer = self.get_serializer(related_jobs, many=True)
+        data['related_jobs'] = related_serializer.data
+
+        return Response(data)
 
 
 class JobApplicationViewSet(ListCreateAPIView):
