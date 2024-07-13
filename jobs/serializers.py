@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
 from .models import Job, JobApplication, Impression, Click, Bookmark
-
 from accounts.models import User
 from companies.models import Company
 from locations.models import Location
@@ -30,8 +29,8 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = 'id', 'name', 'slug'
-        
-        
+
+
 class BookmarkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bookmark
@@ -46,7 +45,7 @@ class JobSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
     bookmark = BookmarkSerializer(required=False, read_only=True)
     get_user = serializers.CharField(source='user', required=False, read_only=True)
-    get_company = serializers.CharField(source='company', required=False, read_only=True)
+    get_company = CompanySerializer(source='company', read_only=True)
     get_location = serializers.CharField(source='location', required=False, read_only=True)
     get_category = serializers.CharField(source='category', required=False, read_only=True)
     applicants = serializers.PrimaryKeyRelatedField(many=True, queryset=User.objects.all(), required=False)
@@ -68,8 +67,10 @@ class JobSerializer(serializers.ModelSerializer):
     class Meta:
         model = Job
         fields = (
-            'title', 'slug', 'truncated_description', 'description', 'view_count', 'click_count', 'get_user', 'get_company', 'get_location', 'user',
-            'get_category', 'company', 'location',  'address', 'category', 'job_type', 'work_experience', 'education_level', 'min_salary', 'max_salary', 'currency', 'salary_type',
+            'title', 'slug', 'truncated_description', 'description', 'view_count', 'click_count', 'get_user',
+            'get_company', 'get_location', 'user',
+            'get_category', 'company', 'location', 'address', 'category', 'job_type', 'work_experience',
+            'education_level', 'min_salary', 'max_salary', 'currency', 'salary_type',
             'created_at', 'updated_at', 'is_active', 'applicants', 'timesince', 'get_job_type',
             'get_created_at', 'days_left', 'plan_title', 'views_count', 'click_count', 'bookmarks', 'bookmark'
         )
@@ -77,7 +78,6 @@ class JobSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return super().create(validated_data)
-
 
 
 class JobApplicationSerializer(serializers.ModelSerializer):
