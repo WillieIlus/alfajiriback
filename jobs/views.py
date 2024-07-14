@@ -59,6 +59,45 @@ class JobViewSet(ListCreateAPIView):
         return Response(serializer.data)
 
 
+class JobDetailsViewSet(RetrieveUpdateDestroyAPIView):
+    queryset = Job.objects.all()
+    serializer_class = JobSerializer
+    lookup_field = 'slug'
+    # permission_classes = [IsAuthenticatedOrReadOnly]
+    parser_classes = (MultiPartParser, FormParser,)
+    
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        time_since_last_clicked = timezone.now() - timedelta(minutes=75)
+
+        # Check if last_clicked_at is not None and greater than time_since_last_clicked
+        if instance.last_clicked_at and instance.last_clicked_at > time_since_last_clicked:
+            instance.click_count += 1
+            instance.view_count += 1
+            instance.save(update_fields=['click_count', 'view_count'])
+            instance.update_last_viewed()
+            instance.update_last_clicked()
+
+        # Always increment view_count by 1
+        else:
+            instance.view_count += 1
+            instance.save(update_fields=['view_count'])
+
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+        # Add related jobs to the response
+        related_jobs = Job.objects.filter(
+            Q(category=instance.category) | Q(company=instance.company)
+        ).exclude(id=instance.id)[:3]
+        related_serializer = self.get_serializer(related_jobs, many=True)
+        data['related_jobs'] = related_serializer.data
+
+        return Response(data)
+
+
 class CompanyJobViewSet(ListAPIView):
     serializer_class = JobSerializer
     lookup_field = 'slug'
@@ -105,44 +144,6 @@ class UserJobViewSet(ListAPIView):
     def get_queryset(self):
         user = User.objects.get(user=self.kwargs['user'])
         return Job.objects.filter(user=user)
-
-
-class JobDetailsViewSet(RetrieveUpdateDestroyAPIView):
-    queryset = Job.objects.all()
-    serializer_class = JobSerializer
-    lookup_field = 'slug'
-    # permission_classes = [IsAuthenticatedOrReadOnly]
-    
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        data = serializer.data
-        time_since_last_clicked = timezone.now() - timedelta(minutes=75)
-
-        # Check if last_clicked_at is not None and greater than time_since_last_clicked
-        if instance.last_clicked_at and instance.last_clicked_at > time_since_last_clicked:
-            instance.click_count += 1
-            instance.view_count += 1
-            instance.save(update_fields=['click_count', 'view_count'])
-            instance.update_last_viewed()
-            instance.update_last_clicked()
-
-        # Always increment view_count by 1
-        else:
-            instance.view_count += 1
-            instance.save(update_fields=['view_count'])
-
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
-        # Add related jobs to the response
-        related_jobs = Job.objects.filter(
-            Q(category=instance.category) | Q(company=instance.company)
-        ).exclude(id=instance.id)[:3]
-        related_serializer = self.get_serializer(related_jobs, many=True)
-        data['related_jobs'] = related_serializer.data
-
-        return Response(data)
 
 
 class JobApplicationViewSet(ListCreateAPIView):
