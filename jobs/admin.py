@@ -2,7 +2,7 @@ from import_export.admin import ImportExportModelAdmin
 
 from django.contrib import admin
 from django.db import models
-from .models import Job, JobApplication, Impression, Click
+from .models import Job, JobApplication, Impression, Click, Bookmark
 from .resource import JobResource
 from import_export.admin import ImportExportModelAdmin
 
@@ -41,3 +41,4 @@ admin.site.register(Job, JobAdmin)
 admin.site.register(JobApplication, JobApplicationAdmin)
 admin.site.register(Impression, ImpressionAdmin)
 admin.site.register(Click, ClickAdmin)
+admin.site.register(Bookmark)

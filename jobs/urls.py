@@ -11,7 +11,9 @@ urlpatterns = [
     path('location/<slug:slug>/', LocationJobViewSet.as_view(), name='location-jobs'),
     path('category/<slug:slug>/', CategoryJobViewSet.as_view(), name='category-jobs'),
     path('user/<slug:slug>/', UserJobViewSet.as_view(), name='user-jobs'),
-    path('bookmark/', BookmarkViewSet.as_view({'post': 'create', 'delete': 'destroy', 'get': 'list'}), name='bookmark'),
+    path('bookmarks/', BookmarkViewSet.as_view({'get': 'list'}), name='bookmark-list'),
+    path('bookmarks/<int:pk>/', BookmarkViewSet.as_view({'delete': 'destroy'}), name='bookmark-delete'),
+    path('jobs/<slug:slug>/bookmark/', BookmarkViewSet.as_view({'post': 'create'}), name='job-bookmark'),
     path('apply/', JobApplicationViewSet.as_view(), name='apply'),
     path('apply/<slug:slug>/', JobApplicationViewSet.as_view(), name='apply'),
 ]

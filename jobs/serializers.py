@@ -8,15 +8,17 @@ from categories.models import Category
 
 
 class UserSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = User
         fields = 'first_name', 'last_name', 'email', 'phone'
 
 
 class CompanySerializer(serializers.ModelSerializer):
+    get_user = serializers.CharField(source='user', required=False)
     class Meta:
         model = Company
-        fields = 'id', 'name', 'slug', 'logo', 'website', 'description'
+        fields = 'id', 'name', 'slug', 'logo', 'website', 'description', 'get_user',
 
 
 class LocationSerializer(serializers.ModelSerializer):
@@ -68,7 +70,7 @@ class JobSerializer(serializers.ModelSerializer):
         model = Job
         fields = (
             'title', 'slug', 'truncated_description', 'description', 'view_count', 'click_count', 'get_user',
-            'get_company', 'get_location', 'user',
+            'get_company', 'get_location', 'user', 'image', 'work_hours', 'work_hour_type',
             'get_category', 'company', 'location', 'address', 'category', 'job_type', 'work_experience',
             'education_level', 'min_salary', 'max_salary', 'currency', 'salary_type',
             'created_at', 'updated_at', 'is_active', 'applicants', 'timesince', 'get_job_type',

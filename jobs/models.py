@@ -310,14 +310,14 @@ class Click(models.Model):
 
 
         
-@receiver(post_save, sender=Bookmark)
-def update_bookmark_count(sender, instance, **kwargs):
-    if created:
-        instance.job.bookmarks += 1
-        instance.job.save()
-    else:
-        instance.job.bookmarks -= 1
-        instance.job.save()
+# @receiver(post_save, sender=Bookmark)
+# def update_bookmark_count(sender, instance, **kwargs):
+#     if created:
+#         instance.job.bookmarks += 1
+#         instance.job.save()
+#     else:
+#         instance.job.bookmarks -= 1
+#         instance.job.save()
 
 @receiver(post_save, sender=JobApplication)
 def update_apply_count(sender, instance, **kwargs):
