@@ -28,23 +28,24 @@ class CompanyListCreateAPIView(ListCreateAPIView):
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
     lookup_field = 'slug'
-    parser_classes = (MultiPartParser, FormParser,)
+    # parser_classes = (MultiPartParser, FormParser,)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+        
 
     def get_permissions(self):
         if self.request.method == 'POST':
             return [IsAuthenticated()]
         return []
 
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # def post(self, request, *args, **kwargs):
+    #     serializer = self.get_serializer(data=request.data)
+    #     if serializer.is_valid():
+    #         serializer.save()
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #     else:
+    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CompanyRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):

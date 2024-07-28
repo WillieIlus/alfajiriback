@@ -1,17 +1,10 @@
-import datetime
-from django.utils import timezone
-from datetime import timedelta
-from django.utils import timezone
-
 import random, string
-from datetime import datetime, timedelta, timezone, date
+from datetime import datetime, timedelta, date
 from decimal import Decimal
 from django.db import models
 from django.utils import timezone
 from django.urls import reverse
 from django.utils.text import slugify
-from django.utils import timezone
-from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.timesince import timesince
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -19,19 +12,21 @@ from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+
 
 from locations.models import Location
 from categories.models import Category
 from companies.models import Company
 from plans.models import Plan
 
-random_string = ''.join(random.choices(string.digits, k=6))
 import logging
-from django.utils.text import slugify
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
+random_string = ''.join(random.choices(string.digits, k=6))
 
 class Job(models.Model):
     # Job Type
@@ -204,11 +199,29 @@ class Job(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            title_str = str(self.title)
-            job_id = str(self.id)  # Changed from company.id to self.id
-            self.slug = slugify(title_str )#+ ' ' + job_id)
+            self.slug = slugify(self.title)
         super(Job, self).save(*args, **kwargs)
 
+
+@receiver(post_save, sender=Job)
+def send_job_notification(sender, instance, created, **kwargs):
+    if created:
+        # Email to admin
+        admin_subject = f"New Job Posted: {instance.title}"
+        admin_message = f"A new job has been posted:\n\nTitle: {instance.title}\nCompany: {instance.company.name}\nDescription: {instance.description[:100]}..."
+        admin_from_email = settings.DEFAULT_FROM_EMAIL
+        admin_recipient_list = [settings.ADMIN_EMAIL]
+
+        send_mail(admin_subject, admin_message, admin_from_email, admin_recipient_list)
+
+        # Email to company
+        company_subject = f"Your New Job Listing: {instance.title}"
+        html_message = render_to_string('emails/new_job_notification.html', {'job': instance})
+        plain_message = strip_tags(html_message)
+        company_from_email = settings.DEFAULT_FROM_EMAIL
+        company_recipient_list = [instance.company.email]  # Assuming the company has an email field
+
+        send_mail(company_subject, plain_message, company_from_email, company_recipient_list, html_message=html_message)
 
 
 class Bookmark(models.Model):
@@ -230,7 +243,7 @@ class Bookmark(models.Model):
 
 
 class JobApplication(models.Model):
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=True, null=True)
+    job = models.ForeignKey('Job', on_delete=models.CASCADE, blank=True, null=True)
     employer_email = models.EmailField()
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=True, null=True)
     resume = models.FileField(upload_to='jobs/resumes/', blank=True, null=True)
@@ -243,7 +256,7 @@ class JobApplication(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return self.job.title + ' - ' + self.job.id
+        return f"{self.job.title} - {self.job.id}" if self.job else "No job associated"
 
     def get_resume_url(self):
         return reverse('jobs:resume', kwargs={'pk': self.pk})
@@ -252,14 +265,30 @@ class JobApplication(models.Model):
         return reverse('jobs:cover_letter', kwargs={'pk': self.pk})
 
     def get_resume_name(self):
-        return self.resume.name.split('/')[-1]
+        return self.resume.name.split('/')[-1] if self.resume else ""
 
     def get_cover_letter_name(self):
-        return self.cover_letter.name.split('/')[-1]
+        return self.cover_letter.split('/')[-1] if self.cover_letter else ""
 
-    def save(self, *args, **kwargs):
-        super(JobApplication, self).save(*args, **kwargs)
+@receiver(post_save, sender=JobApplication)
+def send_application_email(sender, instance, created, **kwargs):
+    if created:
+        try:
+            subject = f"New Job Application for {instance.job.title}"
+            message = f"A new application has been submitted for the job: {instance.job.title}"
+            from_email = settings.DEFAULT_FROM_EMAIL
+            recipient_list = [instance.employer_email]
 
+            send_mail(subject, message, from_email, recipient_list, fail_silently=False)
+            logger.info(f"Application email sent for job {instance.job.id}")
+        except Exception as e:
+            logger.error(f"Failed to send application email for job {instance.job.id}: {str(e)}")
+
+@receiver(post_save, sender=JobApplication)
+def update_job_apply_count(sender, instance, created, **kwargs):
+    if created and instance.job:
+        instance.job.apply_count = JobApplication.objects.filter(job=instance.job).count()
+        instance.job.save()
 
 class Impression(models.Model):
     job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=True, null=True)
@@ -308,33 +337,4 @@ class Click(models.Model):
     def save(self, *args, **kwargs):
         super(Click, self).save(*args, **kwargs)
 
-
-        
-# @receiver(post_save, sender=Bookmark)
-# def update_bookmark_count(sender, instance, **kwargs):
-#     if created:
-#         instance.job.bookmarks += 1
-#         instance.job.save()
-#     else:
-#         instance.job.bookmarks -= 1
-#         instance.job.save()
-
-@receiver(post_save, sender=JobApplication)
-def update_apply_count(sender, instance, **kwargs):
-    if created:
-        instance.job.apply_count += 1
-        instance.job.save()
-    else:
-        instance.job.apply_count -= 1
-        instance.job.save()
-
-@receiver(post_save, sender=Impression)
-def update_impression_count(sender, instance, **kwargs):
-    instance.job.view_count += 1
-    instance.job.save()
-
-@receiver(post_save, sender=Click)
-def update_click_count(sender, instance, **kwargs):
-    instance.job.click_count += 1
-    instance.job.save()
 

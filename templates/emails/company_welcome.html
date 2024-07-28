@@ -1,10 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <title>Welcome to Our Platform</title>
 </head>
 <body>
-$END$
+    <h1>Welcome, {{ company.name }}!</h1>
+    <p>Thank you for joining our platform. We're excited to have you on board!</p>
+    <p>Here are some details about your company profile:</p>
+    <ul>
+        <li>Name: {{ company.name }}</li>
+        <li>Description: {{ company.truncated_description }}</li>
+        {% if company.website %}
+        <li>Website: {{ company.website }}</li>
+        {% endif %}
+    </ul>
+    <p>If you need to make any changes to your profile, please log in to your account.</p>
+    <p>Best regards,<br>Your Platform Team</p>
 </body>
 </html>

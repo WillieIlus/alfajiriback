@@ -1,178 +1,148 @@
 import logging
-from rest_framework.viewsets import ModelViewSet
-from django.db.models import Q, Count
-from django.utils import timezone
-from datetime import datetime, timedelta
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework import status
+from rest_framework import status, viewsets, generics, permissions
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, RetrieveAPIView
-from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny, IsAuthenticatedOrReadOnly
-from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
-from django.http import JsonResponse, Http404
-from rest_framework.views import APIView
-from rest_framework.decorators import action
+from django.utils import timezone
 from django.db.models import Q
+from datetime import timedelta
 
-from .models import Job, JobApplication, Impression, Click, Bookmark
-from .serializers import JobSerializer, JobApplicationSerializer, ImpressionSerializer, ClickSerializer, BookmarkSerializer
+from .models import Job, JobApplication, Impression, Bookmark
+from .serializers import JobSerializer, JobApplicationSerializer, ImpressionSerializer, BookmarkSerializer
 from .filters import JobFilter
 
-from accounts.models import User
-from accounts.serializers import UserSerializer
-from companies.models import Company
-from companies.serializers import CompanySerializer
-from locations.models import Location
-from locations.serializers import LocationSerializer
-from categories.models import Category
-from categories.serializers import CategorySerializer
+logger = logging.getLogger(__name__)
 
 
-class JobViewSet(ListCreateAPIView):
+class JobViewSet(generics.ListCreateAPIView):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
     lookup_field = 'slug'
     filter_backends = (DjangoFilterBackend,)
     filterset_class = JobFilter
-    parser_classes = (MultiPartParser, FormParser,)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
 
     def get_permissions(self):
         if self.request.method == 'POST':
-            return [IsAuthenticated()]
-        return []
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         current_time = timezone.now()
         time_since_last_viewed = current_time - timedelta(minutes=75)
+
         for job in queryset:
             if job.last_viewed_at and job.last_viewed_at > time_since_last_viewed:
                 job.view_count += 1
                 job.save(update_fields=['view_count'])
-            else:
-                pass
+
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
 
-class JobDetailsViewSet(RetrieveUpdateDestroyAPIView):
+class JobDetailsViewSet(generics.RetrieveUpdateDestroyAPIView):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
     lookup_field = 'slug'
-    # permission_classes = [IsAuthenticatedOrReadOnly]
-    parser_classes = (MultiPartParser, FormParser,)
-    
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        data = serializer.data
         time_since_last_clicked = timezone.now() - timedelta(minutes=75)
 
-        # Check if last_clicked_at is not None and greater than time_since_last_clicked
         if instance.last_clicked_at and instance.last_clicked_at > time_since_last_clicked:
             instance.click_count += 1
-            instance.view_count += 1
-            instance.save(update_fields=['click_count', 'view_count'])
-            instance.update_last_viewed()
-            instance.update_last_clicked()
 
-        # Always increment view_count by 1
-        else:
-            instance.view_count += 1
-            instance.save(update_fields=['view_count'])
+        instance.view_count += 1
+        instance.save(update_fields=['click_count', 'view_count'])
+        instance.update_last_viewed()
+        instance.update_last_clicked()
 
         serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+        data = serializer.data
 
         # Add related jobs to the response
         related_jobs = Job.objects.filter(
             Q(category=instance.category) | Q(company=instance.company)
-        ).exclude(id=instance.id)[:3]
+        ).exclude(id=instance.id).order_by('-created_at')[:3]
+
         related_serializer = self.get_serializer(related_jobs, many=True)
         data['related_jobs'] = related_serializer.data
 
         return Response(data)
 
 
-class CompanyJobViewSet(ListAPIView):
+class CompanyJobViewSet(generics.ListAPIView):
     serializer_class = JobSerializer
     lookup_field = 'slug'
-    # permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = JobFilter
 
     def get_queryset(self):
-        company = Company.objects.get(slug=self.kwargs['slug'])
-        return Job.objects.filter(company=company)
+        return Job.objects.filter(company__slug=self.kwargs['slug'])
 
 
-class LocationJobViewSet(ListAPIView):
-    serializer_class = JobSerializer
-    lookup_field = 'slug'
-    permission_classes = [IsAuthenticatedOrReadOnly]
-    filter_backends = (DjangoFilterBackend,)
-    filterset_class = JobFilter
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def apply_for_job(request, job_id):
+    try:
+        job = Job.objects.get(id=job_id)
+    except Job.DoesNotExist:
+        return Response({"error": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    def get_queryset(self):
-        location = Location.objects.get(slug=self.kwargs['slug'])
-        return Job.objects.filter(location=location)
-
-
-class CategoryJobViewSet(ListAPIView):
-    serializer_class = JobSerializer
-    lookup_field = 'slug'
-    permission_classes = [IsAuthenticatedOrReadOnly]
-    filter_backends = (DjangoFilterBackend,)
-    filterset_class = JobFilter
-
-    def get_queryset(self):
-        category = Category.objects.get(slug=self.kwargs['slug'])
-        return Job.objects.filter(category=category)
+    serializer = JobApplicationSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(job=job, user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserJobViewSet(ListAPIView):
-    serializer_class = JobSerializer
-    lookup_field = 'slug'
-    permission_classes = [IsAuthenticatedOrReadOnly]
-    filter_backends = (DjangoFilterBackend,)
-    filterset_class = JobFilter
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def bookmark_job(request, job_id):
+    try:
+        job = Job.objects.get(id=job_id)
+    except Job.DoesNotExist:
+        return Response({"error": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    def get_queryset(self):
-        user = User.objects.get(user=self.kwargs['user'])
-        return Job.objects.filter(user=user)
-
-
-class JobApplicationViewSet(ListCreateAPIView):
-    queryset = JobApplication.objects.all()
-    serializer_class = JobApplicationSerializer
-    permission_classes = [IsAuthenticated]
-
-    def perform_create(self, serializer):
-        job = Job.objects.get(slug=self.kwargs['slug'])
-        serializer.save(user=self.request.user, job=job)
+    bookmark, created = Bookmark.objects.get_or_create(job=job, user=request.user)
+    if created:
+        job.bookmarks += 1
+        job.save()
+        serializer = BookmarkSerializer(bookmark)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response({"message": "Job already bookmarked"}, status=status.HTTP_200_OK)
 
 
-class JobApplicationDetailsViewSet(RetrieveUpdateDestroyAPIView):
-    queryset = JobApplication.objects.all()
-    serializer_class = JobApplicationSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'slug'
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def unbookmark_job(request, job_id):
+    try:
+        job = Job.objects.get(id=job_id)
+        bookmark = Bookmark.objects.get(job=job, user=request.user)
+    except Job.DoesNotExist:
+        return Response({"error": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Bookmark.DoesNotExist:
+        return Response({"error": "Bookmark not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    bookmark.delete()
+    job.bookmarks = max(0, job.bookmarks - 1)
+    job.save()
+    return Response({"message": "Job unbookmarked successfully"}, status=status.HTTP_204_NO_CONTENT)
 
 
-class ImpressionViewSet(ListCreateAPIView):
+class ImpressionViewSet(generics.ListCreateAPIView):
     queryset = Impression.objects.all()
     serializer_class = ImpressionSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [permissions.AllowAny]
 
     def perform_create(self, serializer):
         job = Job.objects.get(slug=self.kwargs['slug'])
         source_ip = self.request.META.get('REMOTE_ADDR')
 
-        # Increment impression count only if there's no impression from the same IP in the last 30 minutes
         if not Impression.objects.filter(
                 job=job, source_ip=source_ip, created_at__gte=timezone.now() - timedelta(minutes=30)
         ).exists():
@@ -181,57 +151,3 @@ class ImpressionViewSet(ListCreateAPIView):
             job.update_last_impression()
 
         serializer.save(job=job, source_ip=source_ip)
-
-
-class BookmarkViewSet(ModelViewSet):
-    queryset = Bookmark.objects.all()
-    serializer_class = BookmarkSerializer
-    permission_classes = [IsAuthenticated]
-
-    def perform_create(self, serializer):
-        job = Job.objects.get(slug=self.kwargs['slug'])
-        serializer.save(user=self.request.user, job=job)
-
-    def get_queryset(self):
-        return Bookmark.objects.filter(user=self.request.user)
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        return JsonResponse({'message': 'Bookmark deleted successfully'}, status=204)
-
-    def perform_destroy(self, instance):
-        instance.delete()
-
-    def get_permissions(self):
-        if self.request.method == 'POST':
-            return [IsAuthenticated()]
-        return []
-
-    def get_serializer_context(self):
-        return {'request': self.request}
-
-    def get_serializer_class(self):
-        if self.request.method == 'GET':
-            return BookmarkSerializer
-        return BookmarkSerializer
-
-    def get_serializer(self, *args, **kwargs):
-
-        if self.request.method == 'GET':
-            kwargs['context'] = self.get_serializer_context()
-            return BookmarkSerializer(*args, **kwargs)
-        return BookmarkSerializer(*args, **kwargs)
-
-    def get_serializer_class(self):
-
-        if self.request.method == 'GET':
-            return BookmarkSerializer
-        return BookmarkSerializer
-
-    def get_serializer(self, *args, **kwargs):
-
-        if self.request.method == 'GET':
-            kwargs['context'] = self.get_serializer_context()
-            return BookmarkSerializer(*args, **kwargs)
-        return BookmarkSerializer(*args, **kwargs)

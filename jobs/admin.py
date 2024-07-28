@@ -16,11 +16,13 @@ class JobAdmin(ImportExportModelAdmin):
     list_per_page = 20
 
 
+
+@admin.register(JobApplication)
 class JobApplicationAdmin(admin.ModelAdmin):
-    list_display = ('job', 'user', 'is_active')
-    list_filter = ('job', 'user', 'is_active')
-    search_fields = ('job__title', 'user__username')
-    list_per_page = 20
+    list_display = ('job', 'user', 'created_at', 'is_active')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('job__title', 'user__email')
+    readonly_fields = ('created_at',)
 
 
 class ImpressionAdmin(admin.ModelAdmin):
@@ -38,7 +40,6 @@ class ClickAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Job, JobAdmin)
-admin.site.register(JobApplication, JobApplicationAdmin)
 admin.site.register(Impression, ImpressionAdmin)
 admin.site.register(Click, ClickAdmin)
 admin.site.register(Bookmark)

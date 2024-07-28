@@ -3,7 +3,12 @@ from django.utils.translation import gettext_lazy as _
 from django.urls import reverse
 from django.utils.text import slugify
 from django.conf import settings
+from django.core.mail import send_mail
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.db.models import Count
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 from locations.models import Location
 from categories.models import Category
@@ -68,15 +73,26 @@ class Company(models.Model):
             self.slug = slugify(self.name)
         super(Company, self).save(*args, **kwargs)
 
-    # def save(self, *args, **kwargs):
-    #     if not self.slug:
-    #         self.slug = slugify(self.name)
-    #         while Company.objects.filter(slug=self.slug).exists():
-    #             self.slug = f'{slugify(self.name)}-{uuid.uuid4().hex[:6]}'
-    #     super(Company, self).save(*args, **kwargs)  # save the instance first
-    #     if self.pk:
-    #         self.job_count = self.job_set.count()
-    #         super(Company, self).save(*args, update_fields=['job_count'], **kwargs)  # update the job_count field
+
+@receiver(post_save, sender=Company)
+def send_company_notification(sender, instance, created, **kwargs):
+    if created and instance.email:  # Check if it's a new company and email is provided
+        # Email to admin
+        admin_subject = f"New Company Added: {instance.name}"
+        admin_message = f"A new company has been added:\n\nName: {instance.name}\nDescription: {instance.truncated_description}\nWebsite: {instance.website}"
+        admin_from_email = settings.DEFAULT_FROM_EMAIL
+        admin_recipient_list = [settings.ADMIN_EMAIL]
+
+        send_mail(admin_subject, admin_message, admin_from_email, admin_recipient_list)
+
+        # Email to company
+        company_subject = f"Welcome to Our Platform, {instance.name}!"
+        html_message = render_to_string('emails/company_welcome.html', {'company': instance})
+        plain_message = strip_tags(html_message)
+        company_from_email = settings.DEFAULT_FROM_EMAIL
+        company_recipient_list = [instance.email]
+
+        send_mail(company_subject, plain_message, company_from_email, company_recipient_list, html_message=html_message)
 
 def get_jobs(self):
     return self.jobs.all()

@@ -10,6 +10,7 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = ['127.0.0.1',  'willieilus.pythonanywhere.com', 'localhost']
 
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -76,17 +77,19 @@ ROOT_URLCONF = 'alfajiriback.urls'
 
 IMPORT_EXPORT_USE_TRANSACTIONS = True
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'alfajirijobs@gmail.com'
-EMAIL_HOST_PASSWORD = 'Alfajiri@2021'
+EMAIL_HOST_PASSWORD = 'anho scvy vcgu apbb'
+DEFAULT_FROM_EMAIL = 'alfajirijobs@gmail.com'
+ADMIN_EMAIL = 'alfajirijobs@gmail.com'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
