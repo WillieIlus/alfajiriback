@@ -1,13 +1,13 @@
 from django.urls import path
 
 from .views import (CompanyListCreateAPIView, CompanyRetrieveUpdateDestroyAPIView, CategoryCompanyViewSet,
-                    MyCompanyViewSet, CompanyLocationViewSet, CompanyCategoryViewSet)
+                    MyCompanyViewSet)
 
 app_name = 'companies'
 
 urlpatterns = [
-    path('my/', MyCompanyViewSet.as_view(), name='user_list'),
     path('', CompanyListCreateAPIView.as_view(), name='list_create'),
+    path('my/', MyCompanyViewSet.as_view(), name='user_list'),
     path('<slug:slug>/', CompanyRetrieveUpdateDestroyAPIView.as_view(), name='retrieve_update_destroy'),
     path('category/<slug:slug>/', CategoryCompanyViewSet.as_view(), name='category_list'),
 

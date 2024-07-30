@@ -234,8 +234,6 @@ class Bookmark(models.Model):
         verbose_name_plural = "Bookmarks"
         ordering = ['-created_at']
 
-    def __str__(self):
-        return self.job.title + ' - ' + self.job.id
 
     def save(self, *args, **kwargs):
         super(Bookmark, self).save(*args, **kwargs)

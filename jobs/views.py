@@ -7,6 +7,11 @@ from django.utils import timezone
 from django.db.models import Q
 from datetime import timedelta
 
+from rest_framework.views import APIView
+
+from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
+
 from .models import Job, JobApplication, Impression, Bookmark
 from .serializers import JobSerializer, JobApplicationSerializer, ImpressionSerializer, BookmarkSerializer
 from .filters import JobFilter
@@ -100,38 +105,30 @@ def apply_for_job(request, job_id):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def bookmark_job(request, job_id):
-    try:
-        job = Job.objects.get(id=job_id)
-    except Job.DoesNotExist:
-        return Response({"error": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
+class ToggleBookmarkView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    bookmark, created = Bookmark.objects.get_or_create(job=job, user=request.user)
-    if created:
-        job.bookmarks += 1
-        job.save()
-        serializer = BookmarkSerializer(bookmark)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response({"message": "Job already bookmarked"}, status=status.HTTP_200_OK)
+    def post(self, request, job_id):
+        job = get_object_or_404(Job, id=job_id)
+        bookmark, created = Bookmark.objects.get_or_create(job=job, user=request.user)
 
+        if created:
+            job.bookmarks += 1
+            job.save()
+            return Response({'status': 'Bookmark added'}, status=status.HTTP_201_CREATED)
+        else:
+            bookmark.delete()
+            job.bookmarks -= 1
+            job.save()
+            return Response({'status': 'Bookmark removed'}, status=status.HTTP_200_OK)
 
-@api_view(['DELETE'])
-@permission_classes([permissions.IsAuthenticated])
-def unbookmark_job(request, job_id):
-    try:
-        job = Job.objects.get(id=job_id)
-        bookmark = Bookmark.objects.get(job=job, user=request.user)
-    except Job.DoesNotExist:
-        return Response({"error": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
-    except Bookmark.DoesNotExist:
-        return Response({"error": "Bookmark not found"}, status=status.HTTP_404_NOT_FOUND)
+class UserBookmarksView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    bookmark.delete()
-    job.bookmarks = max(0, job.bookmarks - 1)
-    job.save()
-    return Response({"message": "Job unbookmarked successfully"}, status=status.HTTP_204_NO_CONTENT)
+    def get(self, request):
+        bookmarks = Bookmark.objects.filter(user=request.user)
+        serializer = BookmarkSerializer(bookmarks, many=True)
+        return Response(serializer.data)
 
 
 class ImpressionViewSet(generics.ListCreateAPIView):

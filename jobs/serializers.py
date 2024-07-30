@@ -33,19 +33,12 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = 'id', 'name', 'slug'
 
 
-class BookmarkSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Bookmark
-        fields = ('id', 'job', 'user', 'created_at')
-        read_only_fields = ('created_at',)
-
-
 class JobSerializer(serializers.ModelSerializer):
     user = UserSerializer(required=False, read_only=True)
     company = serializers.PrimaryKeyRelatedField(queryset=Company.objects.all())
     location = serializers.PrimaryKeyRelatedField(queryset=Location.objects.all())
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
-    bookmark = BookmarkSerializer(required=False, read_only=True)
+    # bookmark = BookmarkSerializer(required=False, read_only=True)
     get_user = serializers.CharField(source='user', required=False, read_only=True)
     get_company = CompanySerializer(source='company', read_only=True)
     get_location = serializers.CharField(source='location', required=False, read_only=True)
@@ -68,18 +61,25 @@ class JobSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Job
-        fields = (
+        fields = ( 'id',
             'title', 'slug', 'truncated_description', 'description', 'view_count', 'click_count', 'get_user',
-            'get_company', 'get_location', 'user', 'image', 'work_hours', 'work_hour_type',
+            'get_company', 'get_location', 'user', 'image', 'vacancies','work_hours', 'work_hour_type',
             'get_category', 'company', 'location', 'address', 'category', 'job_type', 'work_experience',
             'education_level', 'min_salary', 'max_salary', 'currency', 'salary_type',
             'created_at', 'updated_at', 'is_active', 'applicants', 'timesince', 'get_job_type',
-            'get_created_at', 'days_left', 'plan_title', 'views_count', 'click_count', 'bookmarks', 'bookmark'
+            'get_created_at', 'days_left', 'plan_title', 'views_count', 'click_count', 'bookmarks'
         )
         read_only_fields = ('created_at', 'updated_at', 'is_active', 'slug')
 
     def create(self, validated_data):
         return super().create(validated_data)
+
+class BookmarkSerializer(serializers.ModelSerializer):
+    job = JobSerializer()
+    class Meta:
+        model = Bookmark
+        fields = ('id', 'job', 'user', 'is_active', 'created_at')
+        read_only_fields = ('created_at',)
 
 
 class JobApplicationSerializer(serializers.ModelSerializer):
