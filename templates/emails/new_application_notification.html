@@ -1,10 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <title>New Job Application</title>
 </head>
 <body>
-$END$
+    <h1>New Job Application Received</h1>
+    <p>You have received a new application for the job: <strong>{{ job.title }}</strong></p>
+    <h2>Applicant Details:</h2>
+    <ul>
+        <li><strong>Name:</strong> {{ applicant.get_full_name }}</li>
+        <li><strong>Email:</strong> {{ applicant.email }}</li>
+    </ul>
+    <h2>Cover Letter:</h2>
+    <p>{{ cover_letter }}</p>
+    <p>Please log in to your account to review the full application and the attached resume (if provided).</p>
+    <p>Best regards,<br>Your Job Platform Team</p>
 </body>
 </html>

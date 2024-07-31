@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New Job Application - Admin Notification</title>
+</head>
+<body>
+    <h1>New Job Application Submitted</h1>
+    <p>A new application has been submitted for the job: <strong>{{ job.title }}</strong></p>
+    <h2>Application Details:</h2>
+    <ul>
+        <li><strong>Job:</strong> {{ job.title }}</li>
+        <li><strong>Company:</strong> {{ job.company.name }}</li>
+        <li><strong>Applicant:</strong> {{ applicant.get_full_name }}</li>
+        <li><strong>Applicant Email:</strong> {{ applicant.email }}</li>
+    </ul>
+    <p>Please log in to the admin panel to review the full application details.</p>
+    <p>Best regards,<br>Your Job Platform Team</p>
+</body>
+</html>

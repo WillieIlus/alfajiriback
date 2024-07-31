@@ -12,10 +12,9 @@ from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-
 
 from locations.models import Location
 from categories.models import Category
@@ -240,6 +239,7 @@ class Bookmark(models.Model):
 
 
 
+
 class JobApplication(models.Model):
     job = models.ForeignKey('Job', on_delete=models.CASCADE, blank=True, null=True)
     employer_email = models.EmailField()
@@ -272,13 +272,34 @@ class JobApplication(models.Model):
 def send_application_email(sender, instance, created, **kwargs):
     if created:
         try:
+            # Email to employer
             subject = f"New Job Application for {instance.job.title}"
-            message = f"A new application has been submitted for the job: {instance.job.title}"
+            html_content = render_to_string('emails/new_application_notification.html', {
+                'job': instance.job,
+                'applicant': instance.user,
+                'cover_letter': instance.cover_letter
+            })
+            text_content = strip_tags(html_content)
             from_email = settings.DEFAULT_FROM_EMAIL
-            recipient_list = [instance.employer_email]
+            to_email = instance.employer_email
+            msg = EmailMultiAlternatives(subject, text_content, from_email, [to_email])
+            msg.attach_alternative(html_content, "text/html")
+            msg.send()
+            logger.info(f"Application email sent to employer for job {instance.job.id}")
 
-            send_mail(subject, message, from_email, recipient_list, fail_silently=False)
-            logger.info(f"Application email sent for job {instance.job.id}")
+            # Email to admin (you can create a separate HTML template for admin if needed)
+            admin_subject = f"New Job Application for {instance.job.title}"
+            admin_html_content = render_to_string('emails/admin_new_application_notification.html', {
+                'job': instance.job,
+                'applicant': instance.user
+            })
+            admin_text_content = strip_tags(admin_html_content)
+            admin_to_email = settings.ADMIN_EMAIL
+            admin_msg = EmailMultiAlternatives(admin_subject, admin_text_content, from_email, [admin_to_email])
+            admin_msg.attach_alternative(admin_html_content, "text/html")
+            admin_msg.send()
+            logger.info(f"Application email sent to admin for job {instance.job.id}")
+
         except Exception as e:
             logger.error(f"Failed to send application email for job {instance.job.id}: {str(e)}")
 
