@@ -63,7 +63,7 @@ class JobSerializer(serializers.ModelSerializer):
         model = Job
         fields = ( 'id',
             'title', 'slug', 'truncated_description', 'description', 'view_count', 'click_count', 'get_user',
-            'get_company', 'get_location', 'user', 'image', 'vacancies','work_hours', 'work_hour_type',
+            'get_company', 'get_location', 'user', 'email', 'image', 'vacancies','work_hours', 'work_hour_type',
             'get_category', 'company', 'location', 'address', 'category', 'job_type', 'work_experience',
             'education_level', 'min_salary', 'max_salary', 'currency', 'salary_type',
             'created_at', 'updated_at', 'is_active', 'applicants', 'timesince', 'get_job_type',
