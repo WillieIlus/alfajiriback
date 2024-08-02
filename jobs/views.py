@@ -100,7 +100,7 @@ class JobApplicationView(generics.CreateAPIView):
         job = Job.objects.get(id=job_id)
         serializer.save(
             user=self.request.user,
-            employer_email=job.company.email,  # Using job.company.email
+            employer_email=job.email,
             job=job
         )
 
