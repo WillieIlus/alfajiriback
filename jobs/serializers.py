@@ -82,12 +82,12 @@ class BookmarkSerializer(serializers.ModelSerializer):
         read_only_fields = ('created_at',)
 
 
+
 class JobApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobApplication
         fields = ['id', 'job', 'employer_email', 'user', 'resume', 'cover_letter', 'is_active', 'created_at']
-        read_only_fields = ['id', 'is_active', 'created_at']
-
+        read_only_fields = ['id', 'is_active', 'created_at', 'user', 'employer_email']
 
 class ImpressionSerializer(serializers.ModelSerializer):
     class Meta:

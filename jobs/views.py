@@ -37,7 +37,7 @@ class JobViewSet(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         current_time = timezone.now()
-        time_since_last_viewed = current_time - timedelta(minutes=75)
+        time_since_last_viewed = current_time - timedelta(minutes=37)
 
         for job in queryset:
             if job.last_viewed_at and job.last_viewed_at > time_since_last_viewed:
@@ -90,20 +90,19 @@ class CompanyJobViewSet(generics.ListAPIView):
         return Job.objects.filter(company__slug=self.kwargs['slug'])
 
 
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def apply_for_job(request, job_id):
-    try:
+class JobApplicationView(generics.CreateAPIView):
+    queryset = JobApplication.objects.all()
+    serializer_class = JobApplicationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        job_id = self.kwargs.get('job_id')
         job = Job.objects.get(id=job_id)
-    except Job.DoesNotExist:
-        return Response({"error": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    serializer = JobApplicationSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save(job=job, user=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        serializer.save(
+            user=self.request.user,
+            employer_email=job.company.email,  # Using job.company.email
+            job=job
+        )
 
 class ToggleBookmarkView(APIView):
     permission_classes = [IsAuthenticated]
