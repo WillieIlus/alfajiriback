@@ -128,7 +128,7 @@ class Job(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    deadline = models.DateTimeField(blank=True, null=True)
+    deadline = models.DateField(blank=True, null=True)
 
     last_viewed_at = models.DateTimeField(null=True, blank=True)
     last_clicked_at = models.DateTimeField(null=True, blank=True)
