@@ -28,21 +28,28 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class CompanySerializer(serializers.ModelSerializer):
-    user = UserSerializer(required=False)
-    location = LocationSerializer(required=False)
-    category = CategorySerializer(required=False)
-    get_location = serializers.CharField(source='location', required=False)
-    get_category = serializers.CharField(source='category', required=False)
-    get_user = serializers.CharField(source='user', required=False)
-    total_jobs = serializers.SerializerMethodField()
-    jobs = JobSerializer(many=True, read_only=True)
-    truncated_description = serializers.CharField(read_only=True)
+    user = UserSerializer(read_only=True)
+    location = LocationSerializer(read_only=True)
+    category = CategorySerializer(read_only=True)
+    logo = serializers.ImageField(required=False)
+    cover = serializers.ImageField(required=False)
+
+
+    class Meta:
+        model = Company
+        fields = (
+        'id', 'name', 'slug', 'logo', 'cover', 'phone', 'email', 'website', 'truncated_description', 'description',
+        'job_count', 'user', 'address', 'location', 'category', 'created_at', 'updated_at')
+        read_only_fields = ('slug', 'created_at', 'updated_at', 'user', 'location', 'category', 'job_count')
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        for field in ['description', 'phone', 'email', 'website', 'address']:
+            if representation[field] is None:
+                representation[field] = ''
+        return representation
 
     def get_total_jobs(self, company):
         return Job.objects.filter(company=company).count()
 
-    class Meta:
-        model = Company
-        fields = 'id', 'name', 'slug', 'logo', 'cover', 'phone', 'email', 'total_jobs', 'website', 'truncated_description', 'description', 'job_count', 'get_user',\
-            'user', 'jobs', 'address', 'get_location', 'location', 'get_category', 'category', 'created_at', 'updated_at'
-        read_only_fields = ('slug', 'created_at', 'updated_at', 'user')
+

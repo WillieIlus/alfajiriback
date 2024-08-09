@@ -145,11 +145,10 @@ class Job(models.Model):
 
     @property
     def truncated_description(self):
-        max_length = 170
-        if len(self.description) > max_length:
-            return self.description[:max_length] + '...'
-        else:
-            return self.description
+        max_length = 67
+        if self.description:
+            return (self.description[:max_length] + '...') if len(self.description) > max_length else self.description
+        return ''
 
     def update_last_viewed(self):
         self.last_viewed_at = timezone.now()

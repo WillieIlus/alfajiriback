@@ -48,24 +48,55 @@ class JobViewSet(generics.ListCreateAPIView):
         return Response(serializer.data)
 
 
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from django.utils import timezone
+from django.db.models import Q
+from .models import Job
+from .serializers import JobSerializer
+
+
 class JobDetailsViewSet(generics.RetrieveUpdateDestroyAPIView):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
     lookup_field = 'slug'
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
+        # Check if the user has permission to update this job
+        if instance.user != request.user:
+            return Response({"detail": "You do not have permission to update this job."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        image = request.FILES.get('image')
+
+        if image:
+            instance.image = image
+
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
+
+    def perform_update(self, serializer):
+        serializer.save()
+
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        time_since_last_clicked = timezone.now() - timedelta(minutes=75)
-
+        time_since_last_clicked = timezone.now() - timezone.timedelta(minutes=75)
         if instance.last_clicked_at and instance.last_clicked_at > time_since_last_clicked:
             instance.click_count += 1
-
         instance.view_count += 1
         instance.save(update_fields=['click_count', 'view_count'])
         instance.update_last_viewed()
         instance.update_last_clicked()
-
         serializer = self.get_serializer(instance)
         data = serializer.data
 
@@ -73,7 +104,6 @@ class JobDetailsViewSet(generics.RetrieveUpdateDestroyAPIView):
         related_jobs = Job.objects.filter(
             Q(category=instance.category) | Q(company=instance.company)
         ).exclude(id=instance.id).order_by('-created_at')[:3]
-
         related_serializer = self.get_serializer(related_jobs, many=True)
         data['related_jobs'] = related_serializer.data
 
