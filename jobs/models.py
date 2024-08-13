@@ -1,5 +1,5 @@
 import random, string
-from datetime import datetime, timedelta, date
+# from datetime import datetime, timedelta, date
 from decimal import Decimal
 from django.db import models
 from django.utils import timezone
@@ -191,7 +191,7 @@ class Job(models.Model):
     def days_left(self):
         if self.deadline:
             today = timezone.now().date()
-            days_left = (self.deadline.date() - today).days
+            days_left = (self.deadline - today).days
             return max(days_left, 0)
         return None
 
