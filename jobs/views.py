@@ -57,9 +57,7 @@ class JobDetailsViewSet(generics.RetrieveUpdateDestroyAPIView):
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def perform_update(self, serializer):
-        if 'slug' in serializer.validated_data:
-            del serializer.validated_data['slug']
-        serializer.save(user=self.request.user)
+        serializer.save()
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()

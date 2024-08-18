@@ -5,7 +5,8 @@ from accounts.models import User
 from companies.models import Company
 from locations.models import Location
 from categories.models import Category
-
+from django.utils.text import slugify
+from django.db import IntegrityError
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -80,7 +81,7 @@ class JobSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return super().create(validated_data)
-    
+
     def update(self, instance, validated_data):
         # Handle file updates
         image = validated_data.pop('image', None)
@@ -90,32 +91,25 @@ class JobSerializer(serializers.ModelSerializer):
         # Get the new title if it exists
         new_title = validated_data.get('title', instance.title)
 
-        # Initialize a flag to check if we need to update the slug
-        update_slug = False
-
-        # Check if the title has changed
-        if new_title != instance.title:
-            update_slug = True
-
         # Update other fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
-        # If we need to update the slug or if saving fails due to IntegrityError
-        if update_slug or self._check_slug_collision(instance):
-            self._generate_unique_slug(instance, new_title)
+        # Only update the slug if the title has changed
+        if new_title != instance.title:
+            self._update_slug(instance, new_title)
 
-        try:
-            instance.save()
-        except IntegrityError:
-            # If we still get an IntegrityError, it's likely due to the slug
-            self._generate_unique_slug(instance, new_title)
-            instance.save()
-
+        instance.save()
         return instance
-    def _check_slug_collision(self, instance):
-        """Check if there's a slug collision without saving."""
-        return Job.objects.filter(slug=instance.slug).exclude(pk=instance.pk).exists()
+
+    def _update_slug(self, instance, new_title):
+        """Update the slug only if necessary."""
+        new_slug = slugify(new_title)
+        if new_slug != instance.slug:
+            if not Job.objects.filter(slug=new_slug).exclude(pk=instance.pk).exists():
+                instance.slug = new_slug
+            else:
+                self._generate_unique_slug(instance, new_title)
 
     def _generate_unique_slug(self, instance, title):
         """Generate a unique slug for the instance."""
@@ -126,23 +120,6 @@ class JobSerializer(serializers.ModelSerializer):
             unique_slug = f"{base_slug}-{num}"
             num += 1
         instance.slug = unique_slug
-
-    # def update(self, instance, validated_data):
-    #     # Handle file updates
-    #     image = validated_data.pop('image', None)
-    #     validated_data.pop('slug', None)
-    #     if image is not None:
-    #         instance.image = image
-    #     return super().update(instance, validated_data)
-
-    #     # Update other fields
-    #     for attr, value in validated_data.items():
-    #         setattr(instance, attr, value)
-
-    #     instance.save()
-    #     return instance
-
-
         
 
 class BookmarkSerializer(serializers.ModelSerializer):
