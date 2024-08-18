@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from django.utils.timesince import timesince
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, EmailValidator, URLValidator
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.db.models.signals import post_save
@@ -26,6 +26,27 @@ import logging
 logger = logging.getLogger(__name__)
 
 random_string = ''.join(random.choices(string.digits, k=6))
+
+class EmailOrURLField(models.CharField):
+    description = "A field that can be either an email address or a URL"
+
+    def __init__(self, *args, **kwargs):
+        kwargs['max_length'] = 200
+        super().__init__(*args, **kwargs)
+
+    def validate(self, value, model_instance):
+        if value:
+            email_validator = EmailValidator()
+            url_validator = URLValidator()
+            try:
+                email_validator(value)
+            except ValidationError:
+                try:
+                    url_validator(value)
+                except ValidationError:
+                    raise ValidationError('Enter a valid email address or URL.')
+        super().validate(value, model_instance)
+
 
 class Job(models.Model):
     # Job Type
@@ -95,6 +116,7 @@ class Job(models.Model):
 
     email = models.EmailField(max_length=200, blank=True, null=True)
     website = models.URLField(max_length=200, blank=True, null=True)
+    application_contact = EmailOrURLField(blank=True, null=True)
     phone = models.CharField(max_length=200, blank=True, null=True)
     image = models.ImageField(upload_to='jobs/images/', blank=True, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=True, null=True)
