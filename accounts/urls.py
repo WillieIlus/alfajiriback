@@ -1,12 +1,11 @@
 from django.urls import path, include
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
-from .views import UserDetailRetrieveUpdateDestroyView
+from .views import UpdateUserProfileView, UserProfileView
 
 app_name = 'accounts'
 
 urlpatterns = [
     path('', include('djoser.urls')),
     path('', include('djoser.urls.jwt')),
-    path('me/', UserDetailRetrieveUpdateDestroyView.as_view(), name='user-detail'),
+    path('profile/', UserProfileView.as_view(), name='profile-view'),
+    path('profile/update/', UpdateUserProfileView.as_view(), name='profile-update'),
 ]
