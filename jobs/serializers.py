@@ -80,20 +80,70 @@ class JobSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return super().create(validated_data)
-
+    
     def update(self, instance, validated_data):
         # Handle file updates
         image = validated_data.pop('image', None)
         if image is not None:
             instance.image = image
 
+        # Get the new title if it exists
+        new_title = validated_data.get('title', instance.title)
+
+        # Initialize a flag to check if we need to update the slug
+        update_slug = False
+
+        # Check if the title has changed
+        if new_title != instance.title:
+            update_slug = True
+
         # Update other fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
-        instance.save()
-        return instance
+        # If we need to update the slug or if saving fails due to IntegrityError
+        if update_slug or self._check_slug_collision(instance):
+            self._generate_unique_slug(instance, new_title)
 
+        try:
+            instance.save()
+        except IntegrityError:
+            # If we still get an IntegrityError, it's likely due to the slug
+            self._generate_unique_slug(instance, new_title)
+            instance.save()
+
+        return instance
+    def _check_slug_collision(self, instance):
+        """Check if there's a slug collision without saving."""
+        return Job.objects.filter(slug=instance.slug).exclude(pk=instance.pk).exists()
+
+    def _generate_unique_slug(self, instance, title):
+        """Generate a unique slug for the instance."""
+        base_slug = slugify(title)
+        unique_slug = base_slug
+        num = 1
+        while Job.objects.filter(slug=unique_slug).exclude(pk=instance.pk).exists():
+            unique_slug = f"{base_slug}-{num}"
+            num += 1
+        instance.slug = unique_slug
+
+    # def update(self, instance, validated_data):
+    #     # Handle file updates
+    #     image = validated_data.pop('image', None)
+    #     validated_data.pop('slug', None)
+    #     if image is not None:
+    #         instance.image = image
+    #     return super().update(instance, validated_data)
+
+    #     # Update other fields
+    #     for attr, value in validated_data.items():
+    #         setattr(instance, attr, value)
+
+    #     instance.save()
+    #     return instance
+
+
+        
 
 class BookmarkSerializer(serializers.ModelSerializer):
     job = JobSerializer()

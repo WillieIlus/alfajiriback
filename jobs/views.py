@@ -2,15 +2,15 @@ import logging
 from rest_framework import status, viewsets, generics, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from datetime import timedelta
 
-from rest_framework.views import APIView
-
-from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
 
 from .models import Job, JobApplication, Impression, Bookmark
 from .serializers import JobSerializer, JobApplicationSerializer, ImpressionSerializer, BookmarkSerializer
@@ -25,6 +25,7 @@ class JobViewSet(generics.ListCreateAPIView):
     lookup_field = 'slug'
     filter_backends = (DjangoFilterBackend,)
     filterset_class = JobFilter
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def get_permissions(self):
         if self.request.method == 'POST':
@@ -48,45 +49,17 @@ class JobViewSet(generics.ListCreateAPIView):
         return Response(serializer.data)
 
 
-from rest_framework import generics, permissions, status
-from rest_framework.response import Response
-from django.utils import timezone
-from django.db.models import Q
-from .models import Job
-from .serializers import JobSerializer
-
-
 class JobDetailsViewSet(generics.RetrieveUpdateDestroyAPIView):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
     lookup_field = 'slug'
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-
-        # Check if the user has permission to update this job
-        if instance.user != request.user:
-            return Response({"detail": "You do not have permission to update this job."},
-                            status=status.HTTP_403_FORBIDDEN)
-
-        image = request.FILES.get('image')
-
-        if image:
-            instance.image = image
-
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        if getattr(instance, '_prefetched_objects_cache', None):
-            instance._prefetched_objects_cache = {}
-
-        return Response(serializer.data)
+    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def perform_update(self, serializer):
-        serializer.save()
+        if 'slug' in serializer.validated_data:
+            del serializer.validated_data['slug']
+        serializer.save(user=self.request.user)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -130,7 +103,7 @@ class JobApplicationView(generics.CreateAPIView):
         job = Job.objects.get(id=job_id)
         serializer.save(
             user=self.request.user,
-            employer_email=job.email,
+            employer_email=job.application_contact,
             job=job
         )
 

@@ -107,7 +107,7 @@ class Job(models.Model):
     ]
 
     title = models.CharField(max_length=200)
-    slug = models.SlugField(max_length=200, unique=True, verbose_name=_('Slug'), blank=True, null=True)
+    slug = models.SlugField(max_length=200, unique=True, verbose_name=_('Slug'), blank=True)
     address = models.CharField(max_length=255, verbose_name=_('Specific location'), blank=True, null=True)
     location = models.ForeignKey(Location, blank=True, null=True, on_delete=models.CASCADE)
     category = models.ForeignKey(Category,  blank=True, null=True, on_delete=models.CASCADE)
@@ -217,16 +217,40 @@ class Job(models.Model):
             return max(days_left, 0)
         return None
 
+
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
-        super(Job, self).save(*args, **kwargs)
+            self.slug = self.generate_unique_slug()
+        super().save(*args, **kwargs)
+
+    def generate_unique_slug(self):
+        base_slug = slugify(self.title)
+        unique_slug = base_slug
+        counter = 1
+        while Job.objects.filter(slug=unique_slug).exists():
+            unique_slug = f"{base_slug}-{counter}"
+            counter += 1
+        return unique_slug
+
+
+
+
+def update_timestamp(self, field_name):
+    setattr(self, field_name, timezone.now())
+    self.save()
+
+
+def clean(self):
+    if self.min_salary and self.max_salary and self.min_salary > self.max_salary:
+        raise ValidationError(_('Minimum salary cannot be greater than maximum salary.'))
+    if self.deadline and self.deadline < timezone.now().date():
+        raise ValidationError(_('Deadline cannot be in the past.'))
+    super(Job, self).clean()
 
 
 @receiver(post_save, sender=Job)
 def send_job_notification(sender, instance, created, **kwargs):
     if created:
-        # Email to admin
         admin_subject = f"New Job Posted: {instance.title}"
         admin_message = f"A new job has been posted:\n\nTitle: {instance.title}\nCompany: {instance.company.name}\nDescription: {instance.description[:100]}..."
         admin_from_email = settings.DEFAULT_FROM_EMAIL
@@ -234,12 +258,11 @@ def send_job_notification(sender, instance, created, **kwargs):
 
         send_mail(admin_subject, admin_message, admin_from_email, admin_recipient_list)
 
-        # Email to company
         company_subject = f"Your New Job Listing: {instance.title}"
         html_message = render_to_string('emails/new_job_notification.html', {'job': instance})
         plain_message = strip_tags(html_message)
         company_from_email = settings.DEFAULT_FROM_EMAIL
-        company_recipient_list = [instance.company.email]  # Assuming the company has an email field
+        company_recipient_list = [instance.company.email]
 
         send_mail(company_subject, plain_message, company_from_email, company_recipient_list, html_message=html_message)
 
